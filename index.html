@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voltage Difference & Current Flow Simulation</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter & Padauk Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Padauk', sans-serif;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        #v1Slider::-webkit-slider-thumb {
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+        }
+        #v2Slider::-webkit-slider-thumb {
+            background: #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Header Section -->
+    <header class="text-center mb-6">
+        <h1 class="text-2xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-purple-400 to-blue-400">
+            Voltage Potential Difference & Current Flow Simulation
+        </h1>
+        <p class="text-slate-400 text-sm md:text-base mt-2">
+            ဗို့အားပိုမြင့်သော ဘက်မှ ဗို့အားနိမ့်သော ဘက်သို့ လျှပ်စီးကြောင်း ပြောင်းလဲ စီးဆင်းမှု သရုပ်ပြ
+        </p>
+    </header>
+
+    <!-- Main Card Container -->
+    <div class="w-full max-w-4xl bg-slate-800/90 backdrop-blur border border-slate-700/60 rounded-2xl shadow-2xl p-6 flex flex-col items-center gap-6">
+        
+        <!-- Canvas Container -->
+        <div class="w-full relative bg-slate-950 rounded-xl overflow-hidden border border-slate-800 shadow-inner">
+            <canvas id="simCanvas" class="w-full h-[350px] md:h-[400px] block"></canvas>
+        </div>
+
+        <!-- Controls Section -->
+        <div class="w-full grid grid-cols-1 md:grid-cols-2 gap-5 bg-slate-900/70 p-5 rounded-xl border border-slate-800">
+            
+            <!-- Left Voltage Control (V1) -->
+            <div class="flex flex-col gap-3">
+                <div class="flex justify-between items-center">
+                    <label for="v1Slider" class="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]"></span>
+                        ဘယ်ဘက် Voltage (V1)
+                    </label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="range" id="v1Slider" min="0" max="12" value="9" step="1"
+                        class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                    <div id="v1ValText" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-red-400 font-bold text-xs min-w-[55px] text-center">
+                        9 V
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-1">
+                    <button onclick="setPreset(9, 5)" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-md transition-colors">
+                        9V ➜ 5V (ညာသို့စီး)
+                    </button>
+                    <button onclick="setPreset(4, 5)" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-md transition-colors">
+                        4V ➜ 5V (ဘယ်သို့စီး)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Voltage Control (V2) -->
+            <div class="flex flex-col gap-3">
+                <div class="flex justify-between items-center">
+                    <label for="v2Slider" class="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]"></span>
+                        ညာဘက် Voltage (V2)
+                    </label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="range" id="v2Slider" min="0" max="12" value="5" step="1"
+                        class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                    <div id="v2ValText" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-blue-400 font-bold text-xs min-w-[55px] text-center">
+                        5 V
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Flow Info Status Display -->
+        <div class="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-3 text-sm md:text-base font-bold">
+            <div class="flex items-center gap-2">
+                <span class="text-slate-400">Potential Difference:</span>
+                <span class="text-purple-400 text-lg font-extrabold" id="diffValue">4 V</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-slate-400">စီးဆင်းမှု လားရာ:</span>
+                <span class="text-yellow-400 text-base font-bold" id="flowDirectionText">ဘယ်မှ ညာသို့ စီးဆင်းနေသည် (9V -> 5V)</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const v1Slider = document.getElementById('v1Slider');
+        const v2Slider = document.getElementById('v2Slider');
+        const v1ValText = document.getElementById('v1ValText');
+        const v2ValText = document.getElementById('v2ValText');
+
+        const diffValue = document.getElementById('diffValue');
+        const flowDirectionText = document.getElementById('flowDirectionText');
+
+        // Animation Particles
+        const particles = [];
+        for (let i = 0; i < 30; i++) {
+            particles.push({
+                progress: Math.random()
+            });
+        }
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function setPreset(v1, v2) {
+            v1Slider.value = v1;
+            v2Slider.value = v2;
+            render();
+        }
+
+        function drawTerminal(x, y, label, value, isLeft) {
+            const boxW = 50;
+            const boxH = 45;
+            
+            // Positive Terminal (+) Box
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(x - boxW/2, y - boxH/2, boxW, boxH, 10);
+            ctx.fillStyle = '#dc2626';
+            ctx.fill();
+            ctx.strokeStyle = '#f87171';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 26px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('+', x, y);
+
+            // Voltage Text Label Above Terminal
+            ctx.font = 'bold 26px Inter, sans-serif';
+            ctx.fillStyle = isLeft ? '#f87171' : '#60a5fa';
+            ctx.fillText(`${value}V`, x, y - 45);
+
+            // Negative Terminal (-) Box
+            const negY = y + 80;
+            ctx.beginPath();
+            ctx.roundRect(x - boxW/2, negY - boxH/2, boxW, boxH, 10);
+            ctx.fillStyle = '#0f172a';
+            ctx.fill();
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 26px Inter, sans-serif';
+            ctx.fillText('-', x, negY);
+
+            // Ground Symbol Below Negative
+            const gndY = negY + 50;
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(x, negY + boxH/2);
+            ctx.lineTo(x, gndY);
+            ctx.stroke();
+
+            [26, 16, 8].forEach((w, idx) => {
+                ctx.beginPath();
+                ctx.moveTo(x - w / 2, gndY + idx * 5);
+                ctx.lineTo(x + w / 2, gndY + idx * 5);
+                ctx.stroke();
+            });
+
+            ctx.restore();
+        }
+
+        function drawArrowHead(x, y, directionRight) {
+            ctx.save();
+            ctx.beginPath();
+            if (directionRight) {
+                ctx.moveTo(x - 12, y - 8);
+                ctx.lineTo(x + 4, y);
+                ctx.lineTo(x - 12, y + 8);
+            } else {
+                ctx.moveTo(x + 12, y - 8);
+                ctx.lineTo(x - 4, y);
+                ctx.lineTo(x + 12, y + 8);
+            }
+            ctx.fillStyle = '#f59e0b';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function render() {
+            const w = canvas.getBoundingClientRect().width;
+            const h = canvas.getBoundingClientRect().height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const v1 = parseFloat(v1Slider.value);
+            const v2 = parseFloat(v2Slider.value);
+
+            v1ValText.textContent = `${v1} V`;
+            v2ValText.textContent = `${v2} V`;
+
+            const diff = Math.abs(v1 - v2);
+            diffValue.textContent = `${diff} V`;
+
+            let direction = 0; // 1: Right, -1: Left, 0: Equal
+            if (v1 > v2) {
+                direction = 1;
+                flowDirectionText.textContent = `ဘယ်မှ ညာသို့ စီးဆင်းနေသည် (${v1}V ➜ ${v2}V)`;
+                flowDirectionText.className = "text-green-400 text-base font-bold";
+            } else if (v2 > v1) {
+                direction = -1;
+                flowDirectionText.textContent = `ညာမှ ဘယ်သို့ ပြောင်းလဲစီးဆင်းနေသည် (${v2}V ➜ ${v1}V)`;
+                flowDirectionText.className = "text-amber-400 text-base font-bold";
+            } else {
+                direction = 0;
+                flowDirectionText.textContent = `ဗို့အား တူညီနေသဖြင့် လျှပ်စီးကြောင်း မစီးပါ (${v1}V = ${v2}V)`;
+                flowDirectionText.className = "text-slate-400 text-base font-bold";
+            }
+
+            const startX = 120;
+            const endX = w - 120;
+            const centerY = h * 0.35;
+
+            // 1. Main Trace Wire (+ to +)
+            ctx.beginPath();
+            ctx.moveTo(startX, centerY);
+            ctx.lineTo(endX, centerY);
+            ctx.strokeStyle = '#dc2626';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // 2. Animated Particles based on Voltage Difference
+            if (direction !== 0) {
+                const speed = 0.001 + (diff / 12) * 0.005; // Speed depends on voltage difference
+
+                particles.forEach(p => {
+                    if (direction === 1) {
+                        p.progress += speed;
+                        if (p.progress > 1) p.progress = 0;
+                    } else {
+                        p.progress -= speed;
+                        if (p.progress < 0) p.progress = 1;
+                    }
+
+                    const currentX = startX + p.progress * (endX - startX);
+
+                    ctx.beginPath();
+                    ctx.arc(currentX, centerY, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.shadowColor = '#f59e0b';
+                    ctx.shadowBlur = 8;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+
+                // Direction Indicator Arrows along the wire
+                const arrowCount = 5;
+                for (let i = 1; i <= arrowCount; i++) {
+                    const ax = startX + (i / (arrowCount + 1)) * (endX - startX);
+                    drawArrowHead(ax, centerY, direction === 1);
+                }
+            }
+
+            // 3. Draw Terminals & Ground
+            drawTerminal(startX, centerY, 'V1', v1, true);
+            drawTerminal(endX, centerY, 'V2', v2, false);
+
+            requestAnimationFrame(render);
+        }
+
+        v1Slider.addEventListener('input', render);
+        v2Slider.addEventListener('input', render);
+
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>
